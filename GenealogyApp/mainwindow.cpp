@@ -12,12 +12,15 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QListWidget>
+#include <QTreeWidgetItem>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    
+    ui->treeWidget->setHeaderLabel("Drzewo genealogiczne");
 
     // Dodawanie osoby: nadajemy nowe ID przed dodaniem do wektora
     connect(ui->addPersonButton, &QPushButton::clicked, this, [this]() {
@@ -257,6 +260,19 @@ MainWindow::MainWindow(QWidget *parent)
 
         refreshPeopleList(); // odśwież widok listy
     });
+
+    // wyświetlanie drzewa
+    connect(ui->showTreeButton, &QPushButton::clicked, this, [this]() {
+        int row = ui->peopleListWidget->currentRow();
+        if (row < 0 || row >= m_people.size()) {
+            QMessageBox::warning(this, "Błąd", "Nie wybrano osoby startowej");
+            return;
+        }
+
+        ui->treeWidget->clear();
+        buildTree(m_people[row], nullptr);
+        ui->treeWidget->expandAll(); // rozwinięcie całego drzewa
+    });
 }
 
 MainWindow::~MainWindow()
@@ -296,3 +312,32 @@ void MainWindow::recomputeNextId()
     }
     m_nextId = maxId + 1;
 }
+
+void MainWindow::buildTree(const Person &rootPerson, QTreeWidgetItem *parentItem)
+{
+    // Tekst węzła: imię, nazwisko, data urodzenia, ID
+    QString label = QString("%1 %2, ur. %3 (ID: %4)")
+                        .arg(rootPerson.firstName())
+                        .arg(rootPerson.lastName())
+                        .arg(rootPerson.birthDate().isValid() ? rootPerson.birthDate().toString("dd.MM.yyyy") : "?")
+                        .arg(rootPerson.id());
+
+    // Tworzymy element drzewa
+    QTreeWidgetItem *item = new QTreeWidgetItem(QStringList() << label);
+
+    if (parentItem) {
+        parentItem->addChild(item);
+    } else {
+        ui->treeWidget->addTopLevelItem(item);
+    }
+
+    // Rekurencyjnie dodajemy dzieci
+    for (int childId : rootPerson.childrenIds()) {
+        for (const Person &cand : m_people) {
+            if (cand.id() == childId) {
+                buildTree(cand, item);
+            }
+        }
+    }
+}
+

@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTreeWidgetItem>
 #include "person.h"
 
 QT_BEGIN_NAMESPACE
@@ -33,6 +34,9 @@ private:
 
     // (opcjonalnie) funkcja do aktualizacji m_nextId po wczytaniu JSON
     void recomputeNextId();
+
+    // Wyświetla drzewo w formie tekstowej
+    void buildTree(const Person &rootPerson, QTreeWidgetItem *parentItem);
 
 };
 #endif // MAINWINDOW_H
