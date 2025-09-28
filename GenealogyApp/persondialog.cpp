@@ -30,3 +30,17 @@ Person PersonDialog::getPerson() const
 
     return p;
 }
+
+void PersonDialog::setPerson(const Person &p)
+{
+    ui->firstNameEdit->setText(p.firstName());
+    ui->lastNameEdit->setText(p.lastName());
+    ui->maidenNameEdit->setText(p.maidenName());
+    ui->birthDateEdit->setDate(p.birthDate());
+    ui->placeOfBirthEdit->setText(p.birthPlace());
+    ui->deathDateEdit->setDate(p.deathDate().isValid() ? p.deathDate() : QDate::currentDate());
+    ui->placeOfDeathEdit->setText(p.deathPlace());
+    ui->phoneNumberEdit->setText(p.phone());
+    ui->occupationEdit->setText(p.occupation());
+    ui->notesEdit->setPlainText(p.notes());
+}

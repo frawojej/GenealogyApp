@@ -80,6 +80,45 @@ MainWindow::MainWindow(QWidget *parent)
 
         refreshPeopleList(); // odśwież widok listy
     });
+
+    // Obsługa podwójnego kliknięcia na liście osób
+    connect(ui->peopleListWidget, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem *item) {
+        int row = ui->peopleListWidget->row(item);
+        if (row >= 0 && row < m_people.size()) {
+            const Person &p = m_people[row];
+
+            QString details;
+            details += "Imię: " + p.firstName() + "\n";
+            details += "Nazwisko: " + p.lastName() + "\n";
+            details += "Nazwisko panieńskie: " + p.maidenName() + "\n";
+            details += "Data urodzenia: " + p.birthDate().toString("dd.MM.yyyy") + "\n";
+            details += "Miejsce urodzenia: " + p.birthPlace() + "\n";
+            details += "Data śmierci: " + (p.deathDate().isValid() ? p.deathDate().toString("dd.MM.yyyy") : "-") + "\n";
+            details += "Miejsce śmierci: " + p.deathPlace() + "\n";
+            details += "Telefon: " + p.phone() + "\n";
+            details += "Zawód: " + p.occupation() + "\n";
+            details += "Notatki:\n" + p.notes();
+
+            QMessageBox::information(this, "Szczegóły osoby", details);
+        }
+    });
+
+    connect(ui->editPersonButton, &QPushButton::clicked, this, [this]() {
+        int row = ui->peopleListWidget->currentRow();
+        if (row < 0 || row >= m_people.size()) {
+            QMessageBox::warning(this, "Błąd", "Nie wybrano osoby do edycji");
+            return;
+        }
+
+        Person &p = m_people[row];
+        PersonDialog dlg(this);
+        dlg.setPerson(p); // wypełnij formularz istniejącymi danymi
+
+        if (dlg.exec() == QDialog::Accepted) {
+            p = dlg.getPerson(); // nadpisz dane osoby
+            refreshPeopleList(); // odśwież listę
+        }
+    });
 }
 
 MainWindow::~MainWindow()

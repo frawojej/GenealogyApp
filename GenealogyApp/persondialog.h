@@ -18,6 +18,7 @@ public:
 
     // Funkcja, która zwróci obiekt Person na podstawie pól formularza
     Person getPerson() const;
+    void setPerson(const Person &p);
 
 private:
     Ui::PersonDialog *ui;
