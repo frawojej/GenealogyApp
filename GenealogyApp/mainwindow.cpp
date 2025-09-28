@@ -65,22 +65,28 @@ MainWindow::MainWindow(QWidget *parent)
             }
             if (!other) return;
 
+            QString baseName = QString("%1 %2, ur. %3")
+                                   .arg(base.firstName())
+                                   .arg(base.lastName())
+                                   .arg(base.birthDate().isValid() ? base.birthDate().toString("dd.MM.yyyy") : "?");
+
+            QString otherName = QString("%1 %2, ur. %3")
+                                    .arg(other->firstName())
+                                    .arg(other->lastName())
+                                    .arg(other->birthDate().isValid() ? other->birthDate().toString("dd.MM.yyyy") : "?");
+
+            QString relationText;
+
             // Aktualizacja relacji
             if (type == "Rodzic") {
-                base.addParentId(other->id());
-                other->addChildId(base.id());
+                relationText = QString("%1 jest rodzicem %2").arg(otherName, baseName);
             } else if (type == "Dziecko") {
-                base.addChildId(other->id());
-                other->addParentId(base.id());
+                relationText = QString("%1 jest dzieckiem %2").arg(otherName, baseName);
             } else if (type == "Małżonek") {
-                base.setSpouseId(other->id());
-                other->setSpouseId(base.id());
+                relationText = QString("%1 jest małżonkiem %2").arg(baseName, otherName);
             }
 
-            QMessageBox::information(this, "Relacja dodana",
-                                     QString("Dodano relację: %1 ↔ %2")
-                                         .arg(base.firstName() + " " + base.lastName())
-                                         .arg(other->firstName() + " " + other->lastName()));
+            QMessageBox::information(this, "Relacja dodana", relationText);
         }
     });
 
@@ -101,6 +107,43 @@ MainWindow::MainWindow(QWidget *parent)
             details += "Telefon: " + p.phone() + "\n";
             details += "Zawód: " + p.occupation() + "\n";
             details += "Notatki:\n" + p.notes();
+
+            // Rodzice
+            if (!p.parentIds().isEmpty()) {
+                details += "\nRodzice:\n";
+                for (int pid : p.parentIds()) {
+                    for (const Person &cand : m_people) {
+                        if (cand.id() == pid) {
+                            details += " - " + cand.firstName() + " " + cand.lastName()
+                            + ", ur. " + (cand.birthDate().isValid() ? cand.birthDate().toString("dd.MM.yyyy") : "?") + "\n";
+                        }
+                    }
+                }
+            }
+
+            // Dzieci
+            if (!p.childrenIds().isEmpty()) {
+                details += "\nDzieci:\n";
+                for (int cid : p.childrenIds()) {
+                    for (const Person &cand : m_people) {
+                        if (cand.id() == cid) {
+                            details += " - " + cand.firstName() + " " + cand.lastName()
+                            + ", ur. " + (cand.birthDate().isValid() ? cand.birthDate().toString("dd.MM.yyyy") : "?") + "\n";
+                        }
+                    }
+                }
+            }
+
+            // Małżonek
+            if (p.spouseId() != -1) {
+                for (const Person &cand : m_people) {
+                    if (cand.id() == p.spouseId()) {
+                        details += "\nMałżonek:\n";
+                        details += " - " + cand.firstName() + " " + cand.lastName()
+                                   + ", ur. " + (cand.birthDate().isValid() ? cand.birthDate().toString("dd.MM.yyyy") : "?") + "\n";
+                    }
+                }
+            }
 
             QMessageBox::information(this, "Szczegóły osoby", details);
         }
@@ -229,10 +272,11 @@ void MainWindow::refreshPeopleList()
 
     // Dodajemy każdą osobę z wektora
     for (const Person &p : m_people) {
-        // Wyświetlamy imię, nazwisko i (opcjonalnie) ID, ułatwia debugowanie i relacje
-        QString display = QString("%1 %2 (ID: %3)")
+        // Wyświetlamy imię, nazwisko, datę urodzenia i (opcjonalnie) ID, ułatwia debugowanie i relacje
+        QString display = QString("%1 %2, ur. %3 (ID: %4)")
                               .arg(p.firstName())
                               .arg(p.lastName())
+                              .arg(p.birthDate().isValid() ? p.birthDate().toString("dd.MM.yyyy") : "?")
                               .arg(p.id());
         ui->peopleListWidget->addItem(display);
     }
