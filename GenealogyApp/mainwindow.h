@@ -23,5 +23,9 @@ private:
 
     // Wektor przechowujący wszystkie osoby w pamięci
     QVector<Person> m_people;
+
+    // Funkcja pomocnicza do odświeżania widoku listy
+    void refreshPeopleList();
+
 };
 #endif // MAINWINDOW_H

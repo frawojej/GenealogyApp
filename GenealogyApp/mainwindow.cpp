@@ -9,6 +9,7 @@
 #include <QJsonArray>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QListWidget>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -24,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
 
             qDebug() << "Dodano osobę:" << p.firstName() << p.lastName();
             qDebug() << "Łączna liczba osób:" << m_people.size();
+
+            refreshPeopleList(); // odśwież widok listy
         }
     });
 
@@ -73,12 +76,25 @@ MainWindow::MainWindow(QWidget *parent)
                 m_people.append(Person::fromJson(val.toObject()));
             }
         }
-
         qDebug() << "Wczytano osób:" << m_people.size();
+
+        refreshPeopleList(); // odśwież widok listy
     });
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::refreshPeopleList()
+{
+    // Czyścimy listę w GUI
+    ui->peopleListWidget->clear();
+
+    // Dodajemy każdą osobę z wektora
+    for (const Person &p : m_people) {
+        QString display = p.firstName() + " " + p.lastName();
+        ui->peopleListWidget->addItem(display);
+    }
 }
