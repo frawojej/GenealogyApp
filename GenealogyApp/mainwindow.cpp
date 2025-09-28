@@ -2,6 +2,8 @@
 #include "./ui_mainwindow.h"
 #include "person.h"
 #include "persondialog.h"
+#include "relationdialog.h"
+
 #include <QDebug>
 #include <QPushButton>
 #include <QFile>
@@ -36,59 +38,50 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    // Zapis JSON
-    connect(ui->saveJsonButton, &QPushButton::clicked, this, [this]() {
-        QString fileName = QFileDialog::getSaveFileName(this, "Zapisz plik JSON", "", "JSON (*.json)");
-        if (fileName.isEmpty()) return;
-
-        QJsonArray arr;
-        for (const Person &p : m_people) {
-            arr.append(p.toJson());
-        }
-
-        QJsonDocument doc(arr);
-        QFile file(fileName);
-        if (file.open(QIODevice::WriteOnly)) {
-            file.write(doc.toJson());
-            file.close();
-        } else {
-            QMessageBox::warning(this, "Błąd", "Nie udało się zapisać pliku");
-        }
-    });
-
-    // Odczyt JSON
-    connect(ui->loadJsonButton, &QPushButton::clicked, this, [this]() {
-        QString fileName = QFileDialog::getOpenFileName(this, "Wczytaj plik JSON", "", "JSON (*.json)");
-        if (fileName.isEmpty()) return;
-
-        QFile file(fileName);
-        if (!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::warning(this, "Błąd", "Nie udało się otworzyć pliku");
+    // Obsługa przycisku "Dodaj relację"
+    connect(ui->addRelationButton, &QPushButton::clicked, this, [this]() {
+        int row = ui->peopleListWidget->currentRow();
+        if (row < 0 || row >= m_people.size()) {
+            QMessageBox::warning(this, "Błąd", "Nie wybrano osoby bazowej");
             return;
         }
 
-        QByteArray data = file.readAll();
-        file.close();
+        Person &base = m_people[row];
 
-        QJsonDocument doc = QJsonDocument::fromJson(data);
-        if (!doc.isArray()) {
-            QMessageBox::warning(this, "Błąd", "Niepoprawny format JSON");
-            return;
-        }
+        RelationDialog dlg(this);
+        dlg.setPeopleList(m_people, base.id());
 
-        m_people.clear();
-        for (const QJsonValue &val : doc.array()) {
-            if (val.isObject()) {
-                m_people.append(Person::fromJson(val.toObject()));
+        if (dlg.exec() == QDialog::Accepted) {
+            QString type = dlg.relationType();
+            int otherId = dlg.selectedPersonId();
+
+            // Znajdź osobę B po ID
+            Person *other = nullptr;
+            for (Person &p : m_people) {
+                if (p.id() == otherId) {
+                    other = &p;
+                    break;
+                }
             }
+            if (!other) return;
+
+            // Aktualizacja relacji
+            if (type == "Rodzic") {
+                base.addParentId(other->id());
+                other->addChildId(base.id());
+            } else if (type == "Dziecko") {
+                base.addChildId(other->id());
+                other->addParentId(base.id());
+            } else if (type == "Małżonek") {
+                base.setSpouseId(other->id());
+                other->setSpouseId(base.id());
+            }
+
+            QMessageBox::information(this, "Relacja dodana",
+                                     QString("Dodano relację: %1 ↔ %2")
+                                         .arg(base.firstName() + " " + base.lastName())
+                                         .arg(other->firstName() + " " + other->lastName()));
         }
-
-        // --- Ustaw licznik ID tak, żeby nowe osoby nie kolidowały z istniejącymi ---
-        recomputeNextId();
-
-        qDebug() << "Wczytano osób:" << m_people.size();
-
-        refreshPeopleList(); // odśwież widok listy
     });
 
     // Obsługa podwójnego kliknięcia na liście osób
@@ -165,6 +158,61 @@ MainWindow::MainWindow(QWidget *parent)
             qDebug() << "Usunięto osobę:" << name;
             qDebug() << "Łączna liczba osób:" << m_people.size();
         }
+    });
+
+    // Zapis JSON
+    connect(ui->saveJsonButton, &QPushButton::clicked, this, [this]() {
+        QString fileName = QFileDialog::getSaveFileName(this, "Zapisz plik JSON", "", "JSON (*.json)");
+        if (fileName.isEmpty()) return;
+
+        QJsonArray arr;
+        for (const Person &p : m_people) {
+            arr.append(p.toJson());
+        }
+
+        QJsonDocument doc(arr);
+        QFile file(fileName);
+        if (file.open(QIODevice::WriteOnly)) {
+            file.write(doc.toJson());
+            file.close();
+        } else {
+            QMessageBox::warning(this, "Błąd", "Nie udało się zapisać pliku");
+        }
+    });
+
+    // Odczyt JSON
+    connect(ui->loadJsonButton, &QPushButton::clicked, this, [this]() {
+        QString fileName = QFileDialog::getOpenFileName(this, "Wczytaj plik JSON", "", "JSON (*.json)");
+        if (fileName.isEmpty()) return;
+
+        QFile file(fileName);
+        if (!file.open(QIODevice::ReadOnly)) {
+            QMessageBox::warning(this, "Błąd", "Nie udało się otworzyć pliku");
+            return;
+        }
+
+        QByteArray data = file.readAll();
+        file.close();
+
+        QJsonDocument doc = QJsonDocument::fromJson(data);
+        if (!doc.isArray()) {
+            QMessageBox::warning(this, "Błąd", "Niepoprawny format JSON");
+            return;
+        }
+
+        m_people.clear();
+        for (const QJsonValue &val : doc.array()) {
+            if (val.isObject()) {
+                m_people.append(Person::fromJson(val.toObject()));
+            }
+        }
+
+        // --- Ustaw licznik ID tak, żeby nowe osoby nie kolidowały z istniejącymi ---
+        recomputeNextId();
+
+        qDebug() << "Wczytano osób:" << m_people.size();
+
+        refreshPeopleList(); // odśwież widok listy
     });
 }
 
