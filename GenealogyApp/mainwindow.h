@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "person.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,5 +20,8 @@ public:
 
 private:
     Ui::MainWindow *ui;
+
+    // Wektor przechowujący wszystkie osoby w pamięci
+    QVector<Person> m_people;
 };
 #endif // MAINWINDOW_H
