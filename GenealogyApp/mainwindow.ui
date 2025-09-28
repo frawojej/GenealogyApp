@@ -17,8 +17,8 @@
    <widget class="QPushButton" name="addPersonButton">
     <property name="geometry">
      <rect>
-      <x>130</x>
-      <y>440</y>
+      <x>120</x>
+      <y>160</y>
       <width>80</width>
       <height>24</height>
      </rect>
@@ -30,8 +30,8 @@
    <widget class="QPushButton" name="loadJsonButton">
     <property name="geometry">
      <rect>
-      <x>490</x>
-      <y>440</y>
+      <x>530</x>
+      <y>200</y>
       <width>91</width>
       <height>24</height>
      </rect>
@@ -43,8 +43,8 @@
    <widget class="QPushButton" name="saveJsonButton">
     <property name="geometry">
      <rect>
-      <x>490</x>
-      <y>410</y>
+      <x>530</x>
+      <y>170</y>
       <width>91</width>
       <height>24</height>
      </rect>
@@ -80,13 +80,26 @@
     <property name="geometry">
      <rect>
       <x>120</x>
-      <y>170</y>
+      <y>190</y>
       <width>80</width>
       <height>24</height>
      </rect>
     </property>
     <property name="text">
-     <string>Edytuj</string>
+     <string>Edytuj osobę</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="deletePersonButton">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>220</y>
+      <width>80</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Usuń osobę</string>
     </property>
    </widget>
   </widget>
@@ -103,7 +116,10 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <tabstops>
+  <tabstop>peopleListWidget</tabstop>
   <tabstop>addPersonButton</tabstop>
+  <tabstop>editPersonButton</tabstop>
+  <tabstop>deletePersonButton</tabstop>
   <tabstop>saveJsonButton</tabstop>
   <tabstop>loadJsonButton</tabstop>
  </tabstops>

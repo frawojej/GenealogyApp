@@ -119,6 +119,43 @@ MainWindow::MainWindow(QWidget *parent)
             refreshPeopleList(); // odśwież listę
         }
     });
+
+    // Obsługa przycisku "Usuń osobę"
+    connect(ui->deletePersonButton, &QPushButton::clicked, this, [this]() {
+        // Pobieramy indeks zaznaczonego wiersza w QListWidget
+        int row = ui->peopleListWidget->currentRow();
+
+        // Jeśli nic nie zaznaczono, pokaż komunikat i wyjdź
+        if (row < 0 || row >= m_people.size()) {
+            QMessageBox::warning(this, "Błąd", "Nie wybrano osoby do usunięcia");
+            return;
+        }
+
+        // Pobieramy dane osoby, żeby pokazać w komunikacie
+        const Person &p = m_people[row];
+        QString name = p.firstName() + " " + p.lastName();
+
+        // Pytamy użytkownika, czy na pewno chce usunąć
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            "Potwierdzenie",
+            "Czy na pewno chcesz usunąć osobę:\n" + name + "?",
+            QMessageBox::Yes | QMessageBox::No
+            );
+
+        // Jeśli użytkownik kliknął "Tak"
+        if (reply == QMessageBox::Yes) {
+            // Usuwamy osobę z wektora
+            m_people.removeAt(row);
+
+            // Odświeżamy widok listy
+            refreshPeopleList();
+
+            // Informacja w konsoli (debug)
+            qDebug() << "Usunięto osobę:" << name;
+            qDebug() << "Łączna liczba osób:" << m_people.size();
+        }
+    });
 }
 
 MainWindow::~MainWindow()
