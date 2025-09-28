@@ -41,19 +41,35 @@ void Person::setOccupation(const QString &occ) { m_occupation = occ; }
 QString Person::notes() const { return m_notes; }
 void Person::setNotes(const QString &n) { m_notes = n; }
 
-// --- Relacje ---
-void Person::addChild(Person* child) { m_children.append(child); }
-const QList<Person*>& Person::children() const { return m_children; }
+// --- ID ---
+int Person::id() const { return m_id; }
+void Person::setId(int id) { m_id = id; }
 
-void Person::setSpouse(Person* spouse) { m_spouse = spouse; }
-Person* Person::spouse() const { return m_spouse; }
+// --- Relacje rodzinne (ID) ---
+const QList<int>& Person::childrenIds() const { return m_childrenIds; }
+void Person::addChildId(int childId) {
+    // Prosta ochrona przed duplikatami
+    if (!m_childrenIds.contains(childId)) {
+        m_childrenIds.append(childId);
+    }
+}
 
-void Person::addParent(Person* parent) { m_parents.append(parent); }
-const QList<Person*>& Person::parents() const { return m_parents; }
+const QList<int>& Person::parentIds() const { return m_parentIds; }
+void Person::addParentId(int parentId) {
+    if (!m_parentIds.contains(parentId)) {
+        m_parentIds.append(parentId);
+    }
+}
+
+int Person::spouseId() const { return m_spouseId; }
+void Person::setSpouseId(int spouseId) { m_spouseId = spouseId; }
 
 // --- Serializacja JSON ---
 QJsonObject Person::toJson() const {
     QJsonObject obj;
+
+    // Dane osobowe
+    obj["id"] = m_id; // zapisujemy ID osoby
     obj["firstName"] = m_firstName;
     obj["lastName"] = m_lastName;
     obj["maidenName"] = m_maidenName;
@@ -64,11 +80,28 @@ QJsonObject Person::toJson() const {
     obj["phone"] = m_phone;
     obj["occupation"] = m_occupation;
     obj["notes"] = m_notes;
+
+    // Relacje: zapisujemy listy ID
+    QJsonArray childrenArray;
+    for (int id : m_childrenIds) childrenArray.append(id);
+    obj["children"] = childrenArray;
+
+    QJsonArray parentsArray;
+    for (int id : m_parentIds) parentsArray.append(id);
+    obj["parents"] = parentsArray;
+
+    obj["spouse"] = m_spouseId; // -1 jeśli brak
+
     return obj;
 }
 
 Person Person::fromJson(const QJsonObject &obj) {
     Person p;
+
+    // ID
+    p.m_id = obj["id"].toInt(-1);
+
+    // Dane osobowe
     p.m_firstName = obj["firstName"].toString();
     p.m_lastName = obj["lastName"].toString();
     p.m_maidenName = obj["maidenName"].toString();
@@ -79,5 +112,15 @@ Person Person::fromJson(const QJsonObject &obj) {
     p.m_phone = obj["phone"].toString();
     p.m_occupation = obj["occupation"].toString();
     p.m_notes = obj["notes"].toString();
+
+    // Relacje
+    QJsonArray childrenArray = obj["children"].toArray();
+    for (const QJsonValue &val : childrenArray) p.m_childrenIds.append(val.toInt());
+
+    QJsonArray parentsArray = obj["parents"].toArray();
+    for (const QJsonValue &val : parentsArray) p.m_parentIds.append(val.toInt());
+
+    p.m_spouseId = obj["spouse"].toInt(-1);
+
     return p;
 }

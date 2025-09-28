@@ -4,6 +4,7 @@
 #include <QString>
 #include <QDate>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QList>
 
 // Klasa reprezentująca jedną osobę w drzewie genealogicznym
@@ -46,17 +47,23 @@ public:
     QString notes() const;
     void setNotes(const QString &n);
 
-    // Relacje rodzinne
-    void addChild(Person* child);
-    const QList<Person*>& children() const;
+    // --- ID (unikalne) ---
+    // Uwaga: ID nadaje MainWindow przy dodawaniu nowej osoby.
+    int id() const;             // getter ID
+    void setId(int id);         // setter ID (używany przy tworzeniu oraz odczycie z JSON)
 
-    void setSpouse(Person* spouse);
-    Person* spouse() const;
+    // --- Relacje rodzinne (zapisywane jako ID, nie wskaźniki) ---
+    // Dzięki temu relacje są stabilne i łatwo je serializować do JSON.
+    const QList<int>& childrenIds() const;
+    void addChildId(int childId);
 
-    void addParent(Person* parent);
-    const QList<Person*>& parents() const;
+    const QList<int>& parentIds() const;
+    void addParentId(int parentId);
 
-    // Serializacja JSON
+    int spouseId() const;
+    void setSpouseId(int spouseId);
+
+    // --- Serializacja JSON ---
     QJsonObject toJson() const;
     static Person fromJson(const QJsonObject &obj);
 
@@ -73,10 +80,14 @@ private:
     QString m_occupation;
     QString m_notes;
 
-    // Relacje
-    QList<Person*> m_children;
-    QList<Person*> m_parents;
-    Person* m_spouse = nullptr;
+    // --- Unikalny identyfikator osoby ---
+    // Domyślnie -1 oznacza, że ID nie zostało jeszcze nadane.
+    int m_id = -1;
+
+    // --- Relacje (przechowujemy ID innych osób) ---
+    QList<int> m_childrenIds;  // lista ID dzieci
+    QList<int> m_parentIds;    // lista ID rodziców
+    int m_spouseId = -1;       // ID małżonka (-1 = brak)
 };
 
 #endif // PERSON_H

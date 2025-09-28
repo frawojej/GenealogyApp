@@ -17,20 +17,26 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // Dodawanie osoby: nadajemy nowe ID przed dodaniem do wektora
     connect(ui->addPersonButton, &QPushButton::clicked, this, [this]() {
         PersonDialog dlg(this);
         if (dlg.exec() == QDialog::Accepted) {
             Person p = dlg.getPerson();
+
+            // --- Nadanie unikalnego ID ---
+            // Zabezpieczenie: jeśli osoba ma już ustawione ID (np. z edycji), nadpisujemy nowym.
+            // W normalnym flow z PersonDialog ID jest -1, więc tutaj ustawiamy świeże ID.
+            p.setId(m_nextId++);
+
             m_people.append(p);
+            refreshPeopleList();
 
-            qDebug() << "Dodano osobę:" << p.firstName() << p.lastName();
+            qDebug() << "Dodano osobę:" << p.firstName() << p.lastName() << "ID:" << p.id();
             qDebug() << "Łączna liczba osób:" << m_people.size();
-
-            refreshPeopleList(); // odśwież widok listy
         }
     });
 
-    // Zapis
+    // Zapis JSON
     connect(ui->saveJsonButton, &QPushButton::clicked, this, [this]() {
         QString fileName = QFileDialog::getSaveFileName(this, "Zapisz plik JSON", "", "JSON (*.json)");
         if (fileName.isEmpty()) return;
@@ -50,7 +56,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
 
-    // Odczyt
+    // Odczyt JSON
     connect(ui->loadJsonButton, &QPushButton::clicked, this, [this]() {
         QString fileName = QFileDialog::getOpenFileName(this, "Wczytaj plik JSON", "", "JSON (*.json)");
         if (fileName.isEmpty()) return;
@@ -76,6 +82,10 @@ MainWindow::MainWindow(QWidget *parent)
                 m_people.append(Person::fromJson(val.toObject()));
             }
         }
+
+        // --- Ustaw licznik ID tak, żeby nowe osoby nie kolidowały z istniejącymi ---
+        recomputeNextId();
+
         qDebug() << "Wczytano osób:" << m_people.size();
 
         refreshPeopleList(); // odśwież widok listy
@@ -163,6 +173,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+// --- Odświeżanie listy ---
 void MainWindow::refreshPeopleList()
 {
     // Czyścimy listę w GUI
@@ -170,7 +181,26 @@ void MainWindow::refreshPeopleList()
 
     // Dodajemy każdą osobę z wektora
     for (const Person &p : m_people) {
-        QString display = p.firstName() + " " + p.lastName();
+        // Wyświetlamy imię, nazwisko i (opcjonalnie) ID, ułatwia debugowanie i relacje
+        QString display = QString("%1 %2 (ID: %3)")
+                              .arg(p.firstName())
+                              .arg(p.lastName())
+                              .arg(p.id());
         ui->peopleListWidget->addItem(display);
     }
+}
+
+// --- Przeliczenie m_nextId na podstawie wczytanych danych ---
+// Uwaga: dzięki temu unikamy kolizji ID po wczytaniu JSON.
+void MainWindow::recomputeNextId()
+{
+    int maxId = 0;
+    for (Person &p : m_people) {
+        if (p.id() < 0) {
+            // jeśli osoba nie miała ID, nadajemy nowe
+            p.setId(m_nextId++);
+        }
+        if (p.id() > maxId) maxId = p.id();
+    }
+    m_nextId = maxId + 1;
 }
